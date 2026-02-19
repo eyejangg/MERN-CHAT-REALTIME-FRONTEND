@@ -6,8 +6,8 @@ import AuthLayout from "../layouts/AuthLayout";
 
 
 const LoginPage = () => {
-    const { login, isLoggingIn } = useAuthStore();
-    const [showPassword, setShowpassword] = useState(false);
+    const { login, isLoggingIn } = useAuthStore(); // ดึง login, isLoggingIn จาก useAuthStore
+    const [showPassword, setShowpassword] = useState(false); // state สำหรับแสดงรหัสผ่าน
     const [formData, setFormData] = useState({
         email: "",
         password: "",
