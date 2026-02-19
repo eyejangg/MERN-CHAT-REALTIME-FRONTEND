@@ -80,7 +80,7 @@ const LoginPage = () => {
                         <button
                             type="button"
                             className="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer text-base-content/30 hover:text-base-content/60 transition-colors"
-                            onClick={() => setShowPassword(!showPassword)}
+                            onClick={() => setShowpassword(!showPassword)}
                         >
                             {showPassword ? (
                                 <EyeOff className="w-5 h-5" />

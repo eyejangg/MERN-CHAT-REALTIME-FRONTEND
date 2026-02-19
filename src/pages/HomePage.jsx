@@ -14,12 +14,6 @@ const HomePage = () => {
                     <p className="text-lg text-base-content/60">
                         You have successfully logged in. Now you can start building your chat features!
                     </p>
-                    <button
-                        onClick={logOut}
-                        className="btn btn-primary btn-lg"
-                    >
-                        Sign Out
-                    </button>
                 </div>
             </div>
         </AppLayout>

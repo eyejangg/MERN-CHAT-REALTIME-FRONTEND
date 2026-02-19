@@ -4,7 +4,6 @@ import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { Toaster } from "react-hot-toast";
 import { Loader } from "lucide-react";
-
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
 
@@ -14,26 +13,15 @@ const SignUpPage = lazy(() => import("./pages/SignUpPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 
-const App = () => {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
-  const { initTheme } = useThemeStore();
-
-  useEffect(() => {
-    initTheme();
-  }, [initTheme]);
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
+function App() {
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore(); // ดึง authUser, checkAuth, isCheckingAuth จาก useAuthStore มาจาก useAuthStore.js
+  useEffect(() => { // ใช้ useEffect เพื่อตรวจสอบ Auth เมื่อ component ถูก mount
+    checkAuth(); // เรียกใช้ checkAuth เพื่อตรวจสอบ Auth
+  }, [checkAuth]); // dependency array เพื่อป้องกันการเรียกใช้ checkAuth ซ้ำ
   if (isCheckingAuth && !authUser) {
-    return (
-      <div className="flex items-center justify-center h-dvh bg-base-100">
-        <Loader className="w-10 h-10 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen"> <Loader className="w-10 h-10 animate-spin text-primary"
+    /></div>
   }
-
   return (
     <div className="min-h-dvh bg-base-100 text-base-content">
       <Navbar />
