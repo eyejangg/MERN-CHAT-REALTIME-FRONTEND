@@ -1,97 +1,89 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
-import { socket } from "../lib/socket";
+import api from "../services/api";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
-export const useAuthStore = create((set, get) => ({
-    authUser: null,
-    isSigningUp: false,
-    isLoggingIn: false,
-    isUpdatingProfile: false,
-    isCheckingAuth: true,
-    onlineUsers: [],
+// part ที่เป็น attibute (ตัวแปร) ทั้งหมดเลย มีใครทำอะไรอยู่มั้ย
+
+export const useAuthStore = create((set, get) => ({ // ก้อนนี้ต้อง return เป็น object ออกมา
+    authUser: null, // เก็บข้อมูล user , object
+    isCheckingAuth: true, // ตรวจสอบ Auth
+    isSigningUp: false, // สมัครสมาชิก
+    isSigningIn: false,// ล็อคอิน
+    isUpdatingProfile: false, // อัพเดทโปรไฟล์
+    onlineUsers: [], // ผู้ใช้งานออนไลน์
+
+
+    // part ที่เป็น function (ฟังก์ชัน) ทั้งหมดเลย
 
     checkAuth: async () => {
         try {
-            const res = await axiosInstance.get("/user/check");
-            set({ authUser: res.data });
-            get().connectSocket();
-        } catch {
-            set({ authUser: null });
-        } finally {
+            const response = await api.get("/user/check"); // เราส่ง set,get ด้านบนมา เราสามารถ ตั้งค่าตรงนี้ได้ get และ set เราจะได้ข้อมูล user มา เราจะ เช็คแค่ set authUser 
+            set({ authUser: response.data });
+        } catch (error) {
+            console.log("Error in CheckAuth", error);
+            set({ authUser: null }); // ถ้ามีปัญหา คืนเป็นค่า null ไป
+        } finally { // state ที่ทำเสมอ เมื่อทำเสร็จแล้ว = finally
             set({ isCheckingAuth: false });
         }
+
     },
 
-    signup: async (data) => {
+
+
+    // signUP
+
+    register: async (data) => {
         set({ isSigningUp: true });
         try {
-            const res = await axiosInstance.post("/user/register", data);
-            set({ authUser: res.data.user });
-            toast.success("Account created successfully!");
-            get().connectSocket();
+            const response = await api.post("/user/register", data); // ส่งข้อมูลไปให้ backend
+            set({ authUser: response.data }); // รับข้อมูลจาก backend
+            toast.success("Account create successfully");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Something went wrong");
+            toast.error(error.response?.data?.message || "Sign Up failed");
         } finally {
             set({ isSigningUp: false });
         }
     },
 
+    // signIn
+
     login: async (data) => {
-        set({ isLoggingIn: true });
+        set({ isSigningIn: true })
         try {
-            await axiosInstance.post("/user/login", data);
-            const userRes = await axiosInstance.get("/user/check");
-            set({ authUser: userRes.data });
-            toast.success("Logged in successfully!");
-            get().connectSocket();
+            const response = await api.post("/user/login", data);
+            set({ authUser: response.data });
+            toast.success("Login Successfully");
+
         } catch (error) {
-            toast.error(error.response?.data?.message || "Something went wrong");
+            toast.error(error.response?.data?.message || "Sign In failed");
         } finally {
-            set({ isLoggingIn: false });
+            set({ isSigningIn: false });
         }
     },
 
-    logout: async () => {
+    logOut: async () => {
         try {
-            await axiosInstance.post("/user/logout");
+            await api.post("/user/logout");
             set({ authUser: null });
-            toast.success("Logged out successfully!");
-            get().disconnectSocket();
+            toast.success("Logout Successfully");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Something went wrong");
+            toast.error(error.response?.data?.message || "Logout failed");
+
         }
     },
 
     updateProfile: async (data) => {
         set({ isUpdatingProfile: true });
         try {
-            const res = await axiosInstance.put("/user/update-profile", data);
-            set({ authUser: res.data.user });
-            toast.success("Profile updated successfully!");
+            const response = await api.put("/user/update-profile", data);
+            set({ authUser: response.data });
+            toast.success(response.data.message);
         } catch (error) {
-            toast.error(error.response?.data?.message || "Something went wrong");
+            toast.error(error.response?.data?.message || "Update failed");
         } finally {
             set({ isUpdatingProfile: false });
         }
-    },
+    }
 
-    connectSocket: () => {
-        const { authUser } = get();
-        if (!authUser || socket.connected) return;
-
-        socket.auth = { userId: authUser._id };
-        socket.connect();
-
-        socket.on("getOnlineUsers", (userIds) => {
-            set({ onlineUsers: userIds });
-        });
-    },
-
-    disconnectSocket: () => {
-        if (socket.connected) {
-            socket.disconnect();
-        }
-        set({ onlineUsers: [] });
-    },
 }));

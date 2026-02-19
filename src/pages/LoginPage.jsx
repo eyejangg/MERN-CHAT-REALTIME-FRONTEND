@@ -4,15 +4,19 @@ import { Link } from "react-router-dom";
 import { MessageSquare, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import AuthLayout from "../layouts/AuthLayout";
 
-const LoginPage = () => {
-    const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({ email: "", password: "" });
-    const { login, isLoggingIn } = useAuthStore();
 
-    const handleSubmit = (e) => {
+const LoginPage = () => {
+    const { login, isLoggingIn } = useAuthStore();
+    const [showPassword, setShowpassword] = useState(false);
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+    });
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        login(formData);
-    };
+        login(formData); // ส่ง formData เข้าไป 
+    }
 
     return (
         <AuthLayout
@@ -90,7 +94,7 @@ const LoginPage = () => {
                 <button
                     id="login-submit"
                     type="submit"
-                    disabled={isLoggingIn}
+                    disabled={isLoggingIn} // ป้องกันการกดปุ่มซ้ำ
                     className="w-full h-12 bg-primary text-white font-semibold rounded-xl hover:opacity-90 hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
                 >
                     {isLoggingIn ? (
@@ -114,5 +118,6 @@ const LoginPage = () => {
         </AuthLayout>
     );
 };
+
 
 export default LoginPage;

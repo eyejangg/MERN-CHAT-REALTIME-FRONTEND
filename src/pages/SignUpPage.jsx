@@ -3,19 +3,31 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Link } from "react-router-dom";
 import { MessageSquare, User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import AuthLayout from "../layouts/AuthLayout";
+import toast from "react-hot-toast";
 
 const SignUpPage = () => {
+    const { register, isSigningUp } = useAuthStore();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         fullname: "",
         email: "",
         password: "",
     });
-    const { signup, isSigningUp } = useAuthStore();
+
+    const validateForm = () => {
+        if (!formData.fullname.trim()) return toast.error("Full name is required");
+        if (!formData.email.trim()) return toast.error("Email is required");
+        if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email format"); // อันนี้คือ format ของ Email S+ คือต้องการขั้นต่ำ 1 ต้องการ @ และ . อย่างน้อย 1
+        if (!formData.password) return toast.error("Password is required");
+        if (formData.password.length < 6) return toast.error("Password is required 6 ตัวขึ้นไป");
+
+        return true; // ผ่านเงื่อนไขก็ true
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        signup(formData);
+        const success = validateForm();
+        if (success === true) register(formData);
     };
 
     return (
