@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import { socket } from "../lib/socket";
+import { io } from "socket.io-client";
 import toast from "react-hot-toast";
+
 
 export const useAuthStore = create((set, get) => ({
     authUser: null,
+    socket:null,
     isSigningUp: false,
     isLoggingIn: false,
     isUpdatingProfile: false,
@@ -15,7 +17,7 @@ export const useAuthStore = create((set, get) => ({
         try {
             const res = await axiosInstance.get("/user/check");
             set({ authUser: res.data });
-            get().connectSocket();
+            get().connectSocket(); // เรียกใช้ socket.io
         } catch {
             set({ authUser: null });
         } finally {
@@ -28,8 +30,8 @@ export const useAuthStore = create((set, get) => ({
         try {
             const res = await axiosInstance.post("/user/register", data);
             set({ authUser: res.data.user });
+            get().connectSocket(); // เรียกใช้ socket.io
             toast.success("Account created successfully!");
-            get().connectSocket();
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
         } finally {
@@ -43,8 +45,8 @@ export const useAuthStore = create((set, get) => ({
             await axiosInstance.post("/user/login", data);
             const userRes = await axiosInstance.get("/user/check");
             set({ authUser: userRes.data });
+            get().connectSocket(); // เรียกใช้ socket.io
             toast.success("Logged in successfully!");
-            get().connectSocket();
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
         } finally {
@@ -56,8 +58,8 @@ export const useAuthStore = create((set, get) => ({
         try {
             await axiosInstance.post("/user/logout");
             set({ authUser: null });
+            get().disconnectSocket(); // เรียกใช้ socket.io
             toast.success("Logged out successfully!");
-            get().disconnectSocket();
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
         }
@@ -76,22 +78,33 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    connectSocket: () => {
-        const { authUser } = get();
-        if (!authUser || socket.connected) return;
+    connectSocket: () => {// ฟังก์ชั่นนี้ connect Socket.io
+        const { authUser, socket } = get();
+        if (!authUser || socket?.connected) return; // ถ้า authUser ไม่มี หรือ socket.connected มีอยู่แล้ว ให้ return ออกไปเลย
+        
+        const socketURL = import.meta.env.VITE_SOCKET_URL; // ดึงค่า VITE_SOCKET_URL จาก .env
+        const newSocket = io(socketURL, {
+            query: { // กำลังจะจับมือกันและส่ง userId ไปหา Server query ที่เราตั้งค่าไว้
+                userId: authUser._id,
+            }
+        });
 
-        socket.auth = { userId: authUser._id };
-        socket.connect();
+        // จูน Chanel connect ให้ตรงกัน กับ ฝั่ง Server Backend
+        // connect function
+        newSocket.connect();
+        set({ socket: newSocket });
 
-        socket.on("getOnlineUsers", (userIds) => {
-            set({ onlineUsers: userIds });
+        newSocket.on("getOnlineUsers", (userId) => { // รับค่า userId ที่ออนไลน์ออกไปทั้งหมด ส่งผ่าน getOnlineUsers ในฝั่งของ Server ทีั่เราตั้งค่าไว้
+            set({ onlineUsers: userId });  // เก็บค่า userId ที่ออนไลน์ออกไปทั้งหมด
         });
     },
 
+    // disconnect function
     disconnectSocket: () => {
-        if (socket.connected) {
+        const { socket } = get();
+        if (socket?.connected) {
             socket.disconnect();
         }
-        set({ onlineUsers: [] });
-    },
+        set({ socket: null, onlineUsers: [] });
+    }
 }));
