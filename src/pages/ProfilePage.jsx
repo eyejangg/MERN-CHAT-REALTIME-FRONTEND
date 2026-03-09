@@ -39,7 +39,7 @@ const ProfilePage = () => {
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group">
                             <img
-                                src={selectedImg || authUser?.profilePicture || "/avatar.png"}
+                                src={selectedImg || authUser?.profilePic || "/avatar.webp"}
                                 alt="Profile"
                                 className="w-28 h-28 rounded-full object-cover border-4 border-base-300"
                             />
@@ -79,7 +79,7 @@ const ProfilePage = () => {
                                 Full Name
                             </div>
                             <p className="px-4 py-3 bg-base-300/50 rounded-xl border border-base-300 text-base-content text-sm">
-                                {authUser?.fullname || "—"}
+                                {authUser?.name || "—"}
                             </p>
                         </div>
 

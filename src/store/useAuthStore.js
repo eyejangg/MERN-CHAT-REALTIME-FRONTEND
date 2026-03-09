@@ -1,12 +1,13 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import { axiosInstance as api } from "../lib/axios";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 
+const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : "/";
 
 export const useAuthStore = create((set, get) => ({
     authUser: null,
-    socket:null,
+    socket: null,
     isSigningUp: false,
     isLoggingIn: false,
     isUpdatingProfile: false,
@@ -15,8 +16,9 @@ export const useAuthStore = create((set, get) => ({
 
     checkAuth: async () => {
         try {
-            const res = await axiosInstance.get("/user/check");
-            set({ authUser: res.data });
+            const res = await api.get("/user/check");
+            const mappedUser = res.data ? { ...res.data, name: res.data.fullname, profilePic: res.data.profilePicture } : null;
+            set({ authUser: mappedUser });
             get().connectSocket(); // เรียกใช้ socket.io
         } catch {
             set({ authUser: null });
@@ -28,8 +30,10 @@ export const useAuthStore = create((set, get) => ({
     signup: async (data) => {
         set({ isSigningUp: true });
         try {
-            const res = await axiosInstance.post("/user/register", data);
-            set({ authUser: res.data.user });
+            const res = await api.post("/user/register", data);
+            const user = res.data.user;
+            const mappedUser = user ? { ...user, name: user.fullname, profilePic: user.profilePicture } : null;
+            set({ authUser: mappedUser });
             get().connectSocket(); // เรียกใช้ socket.io
             toast.success("Account created successfully!");
         } catch (error) {
@@ -42,9 +46,10 @@ export const useAuthStore = create((set, get) => ({
     login: async (data) => {
         set({ isLoggingIn: true });
         try {
-            await axiosInstance.post("/user/login", data);
-            const userRes = await axiosInstance.get("/user/check");
-            set({ authUser: userRes.data });
+            await api.post("/user/login", data);
+            const userRes = await api.get("/user/check");
+            const mappedUser = userRes.data ? { ...userRes.data, name: userRes.data.fullname, profilePic: userRes.data.profilePicture } : null;
+            set({ authUser: mappedUser });
             get().connectSocket(); // เรียกใช้ socket.io
             toast.success("Logged in successfully!");
         } catch (error) {
@@ -56,7 +61,7 @@ export const useAuthStore = create((set, get) => ({
 
     logout: async () => {
         try {
-            await axiosInstance.post("/user/logout");
+            await api.post("/user/logout");
             set({ authUser: null });
             get().disconnectSocket(); // เรียกใช้ socket.io
             toast.success("Logged out successfully!");
@@ -68,8 +73,10 @@ export const useAuthStore = create((set, get) => ({
     updateProfile: async (data) => {
         set({ isUpdatingProfile: true });
         try {
-            const res = await axiosInstance.put("/user/update-profile", data);
-            set({ authUser: res.data.user });
+            const res = await api.put("/user/update-profile", data);
+            const user = res.data.user;
+            const mappedUser = user ? { ...user, name: user.fullname, profilePic: user.profilePicture } : null;
+            set({ authUser: mappedUser });
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
@@ -81,7 +88,7 @@ export const useAuthStore = create((set, get) => ({
     connectSocket: () => {// ฟังก์ชั่นนี้ connect Socket.io
         const { authUser, socket } = get();
         if (!authUser || socket?.connected) return; // ถ้า authUser ไม่มี หรือ socket.connected มีอยู่แล้ว ให้ return ออกไปเลย
-        
+
         const socketURL = import.meta.env.VITE_SOCKET_URL; // ดึงค่า VITE_SOCKET_URL จาก .env
         const newSocket = io(socketURL, {
             query: { // กำลังจะจับมือกันและส่ง userId ไปหา Server query ที่เราตั้งค่าไว้
