@@ -149,4 +149,31 @@ useEffect(() => {
     
 // Dependency array ด้านล่างนี้ จะสั่งให้ useEffect ทำงานก็ต่อเมื่อค่าตัวแปรจำพวกนี้เปลี่ยนไป
 }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+```### 5. 🛡️ ระบบป้องกันการกดส่งรูปซ้ำ (Spam Prevention)
+**ปัญหาที่พบ:** 
+ผู้ใช้งานอาจกดปุ่มส่งข้อความ/รูปภาพรัวๆ ทำให้ข้อมูลถูกส่งไปยัง Backend ซ้ำซ้อน และแสดงผลในห้องแชทเยอะเกินความจำเป็น
+
+**การแก้ไข:** 
+นำสถานะ `isSending` มาใช้ควบคุมปุ่มส่ง (Disabled) และบล็อกการทำงานในฟังก์ชัน `handleSendMessage` จนกว่าข้อมูลชุดเดิมจะส่งเสร็จสิ้น
+
+**ตัวอย่างโค้ด:**
+```javascript
+const [isSending, setIsSending] = useState(false);
+
+const handleSendMessage = async (e) => {
+    if (isSending) return; // บล็อกถ้ากำลังส่งอยู่
+    try {
+        setIsSending(true);
+        await sendMessage({...}); 
+    } finally {
+        setIsSending(false); // ปลดล็อกหลังจบกระบวนการ
+    }
+};
 ```
+
+### 6. 🔄 แก้ไขการรับข้อความ Real-time (ID Alignment)
+**ปัญหาที่พบ:** 
+ข้อความไม่เด้งขึ้นทันทีที่ฝั่งผู้รับ เนื่องจาก Frontend เช็คชื่อตัวแปรไม่ตรงกับที่ Backend ส่งมา (`senderId` vs `sender`)
+
+**การแก้ไข:** 
+ปรับปรุงใน `useChatStore.js` ส่วนของ `socket.on("newMessage")` ให้เรียกใช้ `newMessage.sender` เพื่อตรวจสอบ ID ของผู้ส่งให้ถูกต้องตาม Schema ของ Backend

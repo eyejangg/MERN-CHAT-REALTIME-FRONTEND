@@ -40,7 +40,7 @@ export const useChatStore = create((set, get) => ({ // call back funtion แล�
     },
 
     getMessages: async (userId) => {
-        set({ isMessagesLoading: true }) 
+        set({ isMessagesLoading: true })
         try {
             const response = await api.get(`/message/${userId}`);
             set({ messages: response.data });
@@ -51,29 +51,31 @@ export const useChatStore = create((set, get) => ({ // call back funtion แล�
         }
     },
 
-    subscribeToMessages: () => {
-        const { selectedUser } = get();
-        if (!selectedUser) return;
+    setSelectedUser: (selectedUser) => {
+        set({ selectedUser });
+    },
 
-        const socket = useAuthStore.getState().socket;
+    subscribeToMessages: () => {
+        const { selectedUser } = get(); //
+        if (!selectedUser) return; // ถ้าไม่ได้เปิด ช่องแชท ฟังก์ชั่นนี้จะไม่ทำงาน return กลับไปได้เลย
+
+        const socket = useAuthStore.getState().socket; //
         if (!socket) return;
 
-        socket.on("newMessage", (newMessage) => {
-            const isMessageFromSelectedUser = newMessage.sender === selectedUser._id;
-            if (!isMessageFromSelectedUser) return;
+        socket.on("newMessage", (newMessage) => { // ถ้ามี คนส่ง newMessage มา  นำ newMessage
+            const isMessageSentFromSelectedUser = newMessage.sender === selectedUser._id; // ตัวแปร Check 
+            if (!isMessageSentFromSelectedUser) return; // ถ้าข้อความไม่ใช่ คนที่ส่งมา เราก็ return คืนไป ไม่ต้องส่งมา
 
             set({
-                messages: [...get().messages, newMessage],
+                messages: [...get().messages, newMessage], // copy เดิมข้อความที่ส่งมา และ นำ ข้อความใหม่มาต่อ messages > newMessage
             });
         });
     },
 
     unsubscribeFromMessages: () => {
-        const socket = useAuthStore.getState().socket;
+        const socket = useAuthStore.getState().socket; // ต้องเรียกใช้ด้านบนด้วย ใน ฟังก์ชั่น
         if (socket) socket.off("newMessage");
     },
 
-    setSelectedUser: (selectedUser) => {
-        set({ selectedUser });
-    },
+
 }));

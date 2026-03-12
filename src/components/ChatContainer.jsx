@@ -6,6 +6,8 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { formatMessageTime } from "../lib/utils";
 
+
+// เรียกใช้ const ต่างๆ ในของ useChatStore
 const ChatContainer = () => {
     const {
         messages,
@@ -15,20 +17,27 @@ const ChatContainer = () => {
         subscribeToMessages,
         unsubscribeFromMessages,
     } = useChatStore();
-    const { authUser } = useAuthStore();
-    const messageEndRef = useRef(null);
+    const { authUser } = useAuthStore(); // use authUser
+    const messageEndRef = useRef(null); // messageEndRef ใช้ในการเลื่อนลงไปข้อความสุดท้าย
 
-    useEffect(() => {
+    useEffect(() => { // 
         if (selectedUser?._id) {
-            getMessages(selectedUser._id);
-            subscribeToMessages();
+            getMessages(selectedUser._id); // เรียกใช้ getMessages เพื่อดึงข้อความ  selectedUser?._id คือ id ของ user ที่เราเลือก
+            subscribeToMessages(); // 
         }
 
-        return () => unsubscribeFromMessages();
-    }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+        return () => unsubscribeFromMessages(); // call backfuntion -  ถ้าไม่มี ให้ return unsub ออกไป
+    }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);  // เลือก , เรียก , ซับ , อันซับ Messages
+
+
+
+
+
+
+
 
     useEffect(() => {
-        if (messageEndRef.current && messages.length > 0) {
+        if (messageEndRef.current && messages.length > 0) { //
             messageEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [messages]);
@@ -54,7 +63,7 @@ const ChatContainer = () => {
                     const isSent = message.sender === authUser?._id;
                     return (
                         <div
-                            key={message._id}
+                            key={message._id} //
                             className={`flex ${isSent ? "justify-end" : "justify-start"}`}
                         >
                             {!isSent && (
@@ -66,9 +75,9 @@ const ChatContainer = () => {
                             )}
 
                             <div className={`max-w-[70%] ${isSent ? "order-1" : ""}`}>
-                                {message.image && (
+                                {message.file && (
                                     <img
-                                        src={message.image}
+                                        src={message.file}
                                         alt="Attachment"
                                         className="rounded-xl mb-1.5 max-w-[250px] border border-base-300"
                                     />
