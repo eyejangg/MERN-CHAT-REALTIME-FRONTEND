@@ -1,68 +1,81 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
-import { axiosInstance } from "../lib/axios";
-import { socket } from "../lib/socket";
+import { axiosInstance as api } from "../lib/axios";
+import { useAuthStore } from "./useAuthStore";
 
-export const useChatStore = create((set, get) => ({
+export const useChatStore = create((set, get) => ({ // call back funtion และส่ง  funtion set, function get เป็น parameter เข้าไปด้วย - จะเรียกใช้ในภายหลัง
+    // และส่ง object ของ state ที่ต้องการเก็บไว้ 
     messages: [],
     users: [],
-    selectedUser: null,
-    isUsersLoading: false,
-    isMessagesLoading: false,
+    selectedUser: null, // user ที่ถูกเลือก
+    isUsersLoading: false, // ใช้สำหรับ loading state
+    isMessageLoading: false, // loading state ของ messages
 
     getUsers: async () => {
         set({ isUsersLoading: true });
         try {
-            const res = await axiosInstance.get("/message/users");
-            set({ users: res.data });
+            const response = await api.get("/message/users");
+            const users = response.data.filteredUsers.map(user => ({
+                ...user,
+                name: user.fullname,
+                profilePic: user.profilePicture
+            }));
+            set({ users });
         } catch (error) {
-            toast.error(error.response?.data?.message || "Error fetching users");
+            toast.error(error.response.data.message || "Get users failed");
         } finally {
-            set({ isUsersLoading: false });
+            set({ isUsersLoading: false }); // กำหนดให้ isUsersLoading เป็น false
+        }
+    },
+    sendMessage: async (messageData) => {
+        const { selectedUser, messages } = get(); // ทำไมต้องใช้ selectedUser เพราะว่า เราต้องส่งข้อความไปยัง user ที่ถูกเลือก
+        try {
+            const response = await api.post("/message/send/" + selectedUser._id, // ส่งข้อความไปยัง user ที่ถูกเลือก
+                messageData,
+            );
+            set({ messages: [...messages, response.data] }) // นำข้อมูลที่ส่งไปแล้วมาต่อท้าย array เดิม
+        } catch (error) {
+            toast.error(error.response.data.message || "Sending Message Failed");
         }
     },
 
     getMessages: async (userId) => {
-        set({ isMessagesLoading: true });
+        set({ isMessagesLoading: true })
         try {
-            const res = await axiosInstance.get(`/message/${userId}`);
-            set({ messages: res.data });
+            const response = await api.get(`/message/${userId}`);
+            set({ messages: response.data });
         } catch (error) {
-            toast.error(error.response?.data?.message || "Error fetching messages");
+            toast.error(error.response.data.message || "Get Message Failed");
         } finally {
             set({ isMessagesLoading: false });
         }
     },
 
-    sendMessage: async (messageData) => {
-        const { selectedUser, messages } = get();
-        if (!selectedUser) return;
-
-        try {
-            const res = await axiosInstance.post(
-                `/message/send/${selectedUser._id}`,
-                messageData
-            );
-            set({ messages: [...messages, res.data] });
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Error sending message");
-        }
+    setSelectedUser: (selectedUser) => {
+        set({ selectedUser });
     },
 
     subscribeToMessages: () => {
-        const { selectedUser } = get();
-        if (!selectedUser) return;
+        const { selectedUser } = get(); //
+        if (!selectedUser) return; // ถ้าไม่ได้เปิด ช่องแชท ฟังก์ชั่นนี้จะไม่ทำงาน return กลับไปได้เลย
 
-        socket.on("newMessage", (newMessage) => {
-            const isFromSelectedUser = newMessage.sender === selectedUser._id;
-            if (!isFromSelectedUser) return;
-            set({ messages: [...get().messages, newMessage] });
+        const socket = useAuthStore.getState().socket; //
+        if (!socket) return;
+
+        socket.on("newMessage", (newMessage) => { // ถ้ามี คนส่ง newMessage มา  นำ newMessage
+            const isMessageSentFromSelectedUser = newMessage.sender === selectedUser._id; // ตัวแปร Check 
+            if (!isMessageSentFromSelectedUser) return; // ถ้าข้อความไม่ใช่ คนที่ส่งมา เราก็ return คืนไป ไม่ต้องส่งมา
+
+            set({
+                messages: [...get().messages, newMessage], // copy เดิมข้อความที่ส่งมา และ นำ ข้อความใหม่มาต่อ messages > newMessage
+            });
         });
     },
 
     unsubscribeFromMessages: () => {
-        socket.off("newMessage");
+        const socket = useAuthStore.getState().socket; // ต้องเรียกใช้ด้านบนด้วย ใน ฟังก์ชั่น
+        if (socket) socket.off("newMessage");
     },
 
-    setSelectedUser: (user) => set({ selectedUser: user }),
+
 }));

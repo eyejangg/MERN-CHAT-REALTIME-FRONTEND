@@ -15,7 +15,7 @@ const ChatHeader = () => {
                     {/* Avatar */}
                     <div className="relative">
                         <img
-                            src={selectedUser?.profilePicture || "/avatar.png"}
+                            src={selectedUser?.profilePicture || "/avatar.webp"}
                             alt={selectedUser?.fullname}
                             className="w-10 h-10 rounded-full object-cover border border-base-300"
                         />
@@ -30,7 +30,7 @@ const ChatHeader = () => {
                             {selectedUser?.fullname}
                         </h3>
                         <p className="text-xs text-base-content/50">
-                            {isOnline ? "Online" : "Offline"}
+                            {onlineUsers.includes(selectedUser?._id) ? "Online" : "Offline"}
                         </p>
                     </div>
                 </div>

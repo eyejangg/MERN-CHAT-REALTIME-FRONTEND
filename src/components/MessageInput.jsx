@@ -6,44 +6,49 @@ import toast from "react-hot-toast";
 const MessageInput = () => {
     const [text, setText] = useState("");
     const [imagePreview, setImagePreview] = useState(null);
+    const [isSending, setIsSending] = useState(false);
     const fileInputRef = useRef(null);
     const { sendMessage } = useChatStore();
 
     const handleImageChange = (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files[0]; // อนุญาติส่งได้แค่ 1รูป [0] - แต่ถ้าจะส่งหลายรูป ต้อง check .lenght เลือกหลายรูปและใส่เป็นค่า [array]
         if (!file) return;
 
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please select an image file");
+        if (!file.type.startsWith("image/")) { // ถ้าไฟล์ที่เลือก ไม่ใช่รูปภาพ
+            toast.error("Please select an image file"); // แสดงข้อความ Error
             return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setImagePreview(reader.result);
+        const reader = new FileReader(); // สร้างตัวอ่านไฟล์
+        reader.onloadend = () => { // base 64
+            setImagePreview(reader.result); // เมื่ออ่านไฟล์เสร็จแล้ว 
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file); // อ่านไฟล์
     };
 
-    const removeImage = () => {
+    const removeImage = () => { // remove Image
         setImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
-    const handleSendMessage = async (e) => {
+    const handleSendMessage = async (e) => { // ส่งข้อความละ ฟังก์ชั่นนี้
         e.preventDefault();
-        if (!text.trim() && !imagePreview) return;
+        if (!text.trim() && !imagePreview) return; // อย่างน้อยอย่างใดอย่าง หนึ่ง ต้องมี text หรือ image ถึงจะส่ง ข้อความหรือรูปภาพได้
+        if (isSending) return; // ป้องกันการกดส่งรัวๆ
 
         try {
-            await sendMessage({
-                text: text.trim(),
-                image: imagePreview,
+            setIsSending(true);
+            await sendMessage({ // เรียกใช้ฟังก์ชั่น sendMessage
+                text: text.trim(),  // attibute text , 
+                file: imagePreview, // attibute image (matching backend 'file' field)
             });
-            setText("");
-            setImagePreview(null);
-            if (fileInputRef.current) fileInputRef.current.value = "";
-        } catch {
-            // Error handled in store
+            setText(""); // ล้างค่า text
+            setImagePreview(null); // ล้างค่า imagePreview
+            if (fileInputRef.current) fileInputRef.current.value = ""; // ล้างค่า fileInputRef
+        } catch (error) {
+            console.error("Failed to send message:", error);
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -91,8 +96,8 @@ const MessageInput = () => {
                     <button
                         type="button"
                         className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${imagePreview
-                                ? "text-primary border-primary/30 bg-primary/10"
-                                : "text-base-content/40 border-base-300 hover:text-base-content/70 hover:bg-base-200"
+                            ? "text-primary border-primary/30 bg-primary/10"
+                            : "text-base-content/40 border-base-300 hover:text-base-content/70 hover:bg-base-200"
                             }`}
                         onClick={() => fileInputRef.current?.click()}
                     >
@@ -102,7 +107,7 @@ const MessageInput = () => {
 
                 <button
                     type="submit"
-                    disabled={!text.trim() && !imagePreview}
+                    disabled={(!text.trim() && !imagePreview) || isSending}
                     className="p-2.5 rounded-xl bg-primary text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
                     <Send className="w-5 h-5" />

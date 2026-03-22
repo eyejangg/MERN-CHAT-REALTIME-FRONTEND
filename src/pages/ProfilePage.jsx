@@ -5,7 +5,14 @@ import { User, Mail, Camera, Loader2 } from "lucide-react";
 const ProfilePage = () => {
     const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
     const [selectedImg, setSelectedImg] = useState(null);
+    const [draftFullname, setDraftFullname] = useState(authUser?.name || "");
     const fileInputRef = useRef(null);
+
+    const handleUpdateProfile = async (e) => {
+        if (e) e.preventDefault();
+        if (draftFullname.trim() === authUser?.name) return;
+        await updateProfile({ fullname: draftFullname });
+    };
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -39,7 +46,7 @@ const ProfilePage = () => {
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group">
                             <img
-                                src={selectedImg || authUser?.profilePicture || "/avatar.png"}
+                                src={selectedImg || authUser?.profilePic || "/avatar.webp"}
                                 alt="Profile"
                                 className="w-28 h-28 rounded-full object-cover border-4 border-base-300"
                             />
@@ -78,8 +85,21 @@ const ProfilePage = () => {
                                 <User className="w-3.5 h-3.5" />
                                 Full Name
                             </div>
-                            <p className="px-4 py-3 bg-base-300/50 rounded-xl border border-base-300 text-base-content text-sm">
-                                {authUser?.fullname || "—"}
+                            <input
+                                type="text"
+                                className="w-full px-4 py-3 bg-base-300/50 rounded-xl border border-base-300 text-base-content text-sm focus:outline-primary/50"
+                                value={draftFullname}
+                                onChange={(e) => setDraftFullname(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        handleUpdateProfile();
+                                    }
+                                }}
+                                placeholder="Enter your full name"
+                                disabled={isUpdatingProfile}
+                            />
+                            <p className="text-[10px] text-base-content/40 ml-1">
+                                Press Enter to save your new name
                             </p>
                         </div>
 
@@ -88,7 +108,7 @@ const ProfilePage = () => {
                                 <Mail className="w-3.5 h-3.5" />
                                 Email
                             </div>
-                            <p className="px-4 py-3 bg-base-300/50 rounded-xl border border-base-300 text-base-content text-sm">
+                            <p className="px-4 py-3 bg-base-300/50 rounded-xl border border-base-300 text-base-content/50 text-sm cursor-not-allowed">
                                 {authUser?.email || "—"}
                             </p>
                         </div>
