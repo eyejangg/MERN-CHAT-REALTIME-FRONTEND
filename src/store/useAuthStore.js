@@ -7,33 +7,36 @@ const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000
 
 export const useAuthStore = create((set, get) => ({
     authUser: null,
-    socket: null,
+    socket: null, // เก็บ Socket instance ไว้ใน Store!
     isSigningUp: false,
     isLoggingIn: false,
     isUpdatingProfile: false,
     isCheckingAuth: true,
     onlineUsers: [],
 
+    // ❸ Check Auth → เปิดเว็บ → ส่ง Cookie ไปถาม Backend
     checkAuth: async () => {
         try {
-            const res = await api.get("/user/check");
-            const mappedUser = res.data ? { ...res.data, name: res.data.fullname, profilePic: res.data.profilePicture } : null;
-            set({ authUser: mappedUser });
+            const res = await api.get("/user/check"); // await api.get("/user/check") เช็คว่ามี Cookie ไหม
+            const mappedUser = res.data ? { ...res.data, name: res.data.fullname, profilePic: res.data.profilePicture } : null; 
+            // map ข้อมูล ให้ตรงกับ frontend 
+            set({ authUser: mappedUser }); // set ข้อมูล authUser
             get().connectSocket(); // เรียกใช้ socket.io
         } catch {
-            set({ authUser: null });
+            set({ authUser: null }); // ถ้าไม่มี Cookie ให้ set authUser เป็น null
         } finally {
-            set({ isCheckingAuth: false });
+            set({ isCheckingAuth: false }); // set isCheckingAuth เป็น false
         }
     },
 
+    // ❷ Register → สร้างบัญชี → Auto-Login → ต่อ Socket
     signup: async (data) => {
         set({ isSigningUp: true });
         try {
-            const res = await api.post("/user/register", data);
-            const user = res.data.user;
+            const res = await api.post("/user/register", data); // await api.post("/user/register", data) สร้างบัญชี
+            const user = res.data.user; // const user = res.data.user เก็บข้อมูล user
             const mappedUser = user ? { ...user, name: user.fullname, profilePic: user.profilePicture } : null;
-            set({ authUser: mappedUser });
+            set({ authUser: mappedUser }); // set ข้อมูล authUser
             get().connectSocket(); // เรียกใช้ socket.io
             toast.success("Account created successfully!");
         } catch (error) {
@@ -61,9 +64,9 @@ export const useAuthStore = create((set, get) => ({
 
     logout: async () => {
         try {
-            await api.post("/user/logout");
-            set({ authUser: null });
-            get().disconnectSocket(); // เรียกใช้ socket.io
+            await api.post("/user/logout"); // await api.post("/user/logout") ตัดการเชื่อมต่อ socket.io
+            set({ authUser: null }); // set ข้อมูล authUser
+            get().disconnectSocket(); // ตัดการเชื่อมต่อ socket.io
             toast.success("Logged out successfully!");
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
@@ -73,10 +76,10 @@ export const useAuthStore = create((set, get) => ({
     updateProfile: async (data) => {
         set({ isUpdatingProfile: true });
         try {
-            const res = await api.put("/user/update-profile", data);
-            const user = res.data.user;
+            const res = await api.put("/user/update-profile", data); // await api.put("/user/update-profile", data) อัปเดตข้อมูล
+            const user = res.data.user; // const user = res.data.user เก็บข้อมูล user
             const mappedUser = user ? { ...user, name: user.fullname, profilePic: user.profilePicture } : null;
-            set({ authUser: mappedUser });
+            set({ authUser: mappedUser }); // set ข้อมูล authUser
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
